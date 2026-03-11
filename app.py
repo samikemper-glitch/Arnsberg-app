@@ -19,7 +19,7 @@ STATUS_FILE = BASE_DIR / "refresh_status.json"
 
 app = FastAPI(
     title="Arnsberg Bürger Monitor",
-    version="3.0.0",
+    version="4.0.0",
 )
 
 app.add_middleware(
@@ -214,7 +214,6 @@ def items(
     else:
         values = []
         seen: set[str] = set()
-
         for place_items in data.get("by_place", {}).values():
             for item in place_items:
                 key = (

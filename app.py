@@ -12,9 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from arnsberg_buergermonitor import collect, PLACES
 
 BASE_DIR = Path(__file__).resolve().parent
-PROJECT_DIR = BASE_DIR.parent
-FRONTEND_DIR = PROJECT_DIR / 'frontend'
-DATA_FILE = BASE_DIR / 'data.json'
+PROJECT_DIR = BASE_DIR
+FRONTEND_DIR = BASE_DIR
+DATA_FILE = BASE_DIR / "data.json"
 
 app = FastAPI(title='Arnsberg Bürger Monitor', version='2.0.0')
 

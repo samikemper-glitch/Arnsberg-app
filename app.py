@@ -41,31 +41,34 @@ SOURCES = [
         "base": "https://www.arnsberg.de",
         "urls": [
             "https://www.arnsberg.de/",
+            "https://www.arnsberg.de/rathaus-politik/",
             "https://www.arnsberg.de/rathaus-politik/pressestelle/presse-infos",
+            "https://www.arnsberg.de/leben-in-arnsberg/",
+            "https://www.arnsberg.de/klima-umwelt/",
         ],
-        "allow_domains": ["www.arnsberg.de", "arnsberg.de"],
+        "allow_domains": ["arnsberg.de", "www.arnsberg.de"],
         "include_keywords": [
             "presse",
-            "artikel",
-            "news",
             "meldung",
-            "mitteilung",
+            "artikel",
             "projekt",
-            "rathaus",
-            "politik",
-            "stadt",
             "verkehr",
+            "bau",
             "schule",
             "kita",
-            "bau",
+            "rat",
+            "politik",
+            "stadtentwicklung",
+            "umwelt",
+            "klima",
+            "sport",
+            "kultur",
         ],
         "exclude_keywords": [
             "impressum",
             "datenschutz",
             "barrierefreiheit",
             "karriere",
-            "serviceportal",
-            "service-portal",
             "kontakt",
             "suche",
             "login",
@@ -78,22 +81,22 @@ SOURCES = [
         "urls": [
             "https://www.wp.de/staedte/arnsberg/",
         ],
-        "allow_domains": ["www.wp.de", "wp.de"],
+        "allow_domains": ["wp.de", "www.wp.de"],
         "include_keywords": [
             "arnsberg",
             "neheim",
             "hüsten",
             "oeventrop",
             "bruchhausen",
-            "herdringen",
             "voßwinkel",
             "bachum",
-            "politik",
-            "rat",
-            "stadt",
+            "herdringen",
             "verkehr",
-            "schule",
             "bau",
+            "schule",
+            "rat",
+            "politik",
+            "stadt",
         ],
         "exclude_keywords": [
             "impressum",
@@ -114,26 +117,28 @@ SOURCES = [
         "base": "https://ratsinfo.arnsberg.de",
         "urls": [
             "https://ratsinfo.arnsberg.de/",
+            "https://ratsinfo.arnsberg.de/bi/si010_e.asp",
+            "https://ratsinfo.arnsberg.de/bi/to010_e.asp",
+            "https://ratsinfo.arnsberg.de/bi/vo020_e.asp",
         ],
         "allow_domains": ["ratsinfo.arnsberg.de"],
         "include_keywords": [
             "vorlage",
             "sitzung",
-            "top",
             "beschluss",
-            "ausschuss",
             "rat",
+            "ausschuss",
             "bezirksausschuss",
-            "recherche",
-            "meeting",
-            "document",
+            "top",
+            "vo020",
+            "si010",
+            "to010",
         ],
         "exclude_keywords": [
-            "login",
             "impressum",
             "datenschutz",
+            "login",
             "hilfe",
-            "javascript:",
         ],
     },
 ]
@@ -166,17 +171,61 @@ NOISE_PATTERNS = [
     r"\bnewsletter\b",
     r"\banmelden\b",
     r"\blogin\b",
+    r"\bteilen\b",
+    r"\bweitere artikel\b",
+    r"\bmehr zum thema\b",
 ]
 
 SECTION_KEYWORDS = {
-    "Verkehr": ["verkehr", "straße", "ampel", "kreuzung", "park", "parken", "radweg", "brücke", "baustelle"],
-    "Bauen": ["bauen", "bau", "sanierung", "umbau", "bebauung", "erschließung", "baugebiet"],
-    "Schule/Kita": ["schule", "kita", "kindergarten", "bildung", "schüler", "schul"],
-    "Politik": ["rat", "ausschuss", "beschluss", "vorlage", "sitzung", "bezirksausschuss"],
-    "Sicherheit": ["feuerwehr", "polizei", "ordnungsamt", "sicherheit", "schutz"],
-    "Umwelt": ["umwelt", "klima", "energie", "baum", "natur", "nachhaltigkeit"],
-    "Finanzen": ["haushalt", "gebühr", "kosten", "förderung", "finanzen"],
-    "Freizeit/Kultur": ["kultur", "sport", "museum", "veranstaltung", "freizeit", "tourismus"],
+    "Verkehr": [
+        "verkehr", "straße", "strasse", "ampel", "kreuzung", "park",
+        "parken", "radweg", "brücke", "bruecke", "baustelle",
+        "umleitung", "fahrbahn", "verkehrsführung", "verkehrsfuehrung"
+    ],
+    "Bauen": [
+        "bauen", "bau", "sanierung", "umbau", "bebauung", "erschließung",
+        "erschliessung", "baugebiet", "wohngebiet", "wohnbebauung",
+        "gewerbegebiet", "hochbau", "tiefbau"
+    ],
+    "Schule/Kita": [
+        "schule", "kita", "kindergarten", "bildung", "schüler",
+        "schueler", "offene ganztagsschule", "ogs"
+    ],
+    "Politik": [
+        "rat", "ausschuss", "beschluss", "vorlage", "sitzung",
+        "bezirksausschuss", "stadtrat"
+    ],
+    "Sicherheit": [
+        "feuerwehr", "polizei", "ordnungsamt", "sicherheit", "schutz",
+        "rettungsdienst", "brand", "einsatz"
+    ],
+    "Umwelt": [
+        "umwelt", "klima", "energie", "baum", "natur", "nachhaltigkeit",
+        "co2", "photovoltaik", "solar", "wasser", "grün", "gruen"
+    ],
+    "Finanzen": [
+        "haushalt", "gebühr", "gebuehr", "kosten", "förderung",
+        "foerderung", "finanzen", "investition", "mittel"
+    ],
+    "Freizeit/Kultur": [
+        "kultur", "sport", "museum", "veranstaltung", "freizeit",
+        "tourismus", "festival", "konzert", "halle", "bad"
+    ],
+}
+
+SUMMARY_REPLACEMENTS = {
+    "Beschlussvorlage": "Vorlage",
+    "Sitzungsvorlage": "Vorlage",
+    "Verwaltungsvorlage": "Vorlage",
+    "Maßnahme": "Projekt",
+    "Massnahme": "Projekt",
+    "Kenntnisnahme": "Info",
+    "Beratung": "Besprechung",
+    "Umsetzung": "Durchführung",
+    "Herstellung": "Bau",
+    "Erschließung": "Erschließung",
+    "Erschliessung": "Erschließung",
+    "verkehrliche": "Verkehrs-",
 }
 
 
@@ -199,7 +248,7 @@ def clean_text(text: str) -> str:
     for pattern in NOISE_PATTERNS:
         text = re.sub(pattern, " ", text, flags=re.IGNORECASE)
 
-    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\s+", " ", text).strip(" -–|")
     return text
 
 
@@ -219,7 +268,7 @@ def guess_places(text: str, title: str = "") -> list[str]:
     found: list[str] = []
 
     for place in PLACES:
-        if place.lower() in haystack:
+        if place.lower() in haystack and place not in found:
             found.append(place)
 
     return found
@@ -253,17 +302,7 @@ def simplify_text(text: str, max_len: int = 420) -> str:
     if not text:
         return ""
 
-    replacements = {
-        "Beschlussvorlage": "Vorlage",
-        "Sitzungsvorlage": "Vorlage",
-        "Verwaltungsvorlage": "Vorlage",
-        "Maßnahme": "Projekt",
-        "Kenntnisnahme": "Info",
-        "Beratung": "Besprechung",
-        "Umsetzung": "Durchführung",
-    }
-
-    for old, new in replacements.items():
+    for old, new in SUMMARY_REPLACEMENTS.items():
         text = text.replace(old, new)
 
     if len(text) > max_len:
@@ -297,17 +336,15 @@ def extract_title(soup: BeautifulSoup) -> str:
 
 
 def extract_teaser(soup: BeautifulSoup) -> str:
-    meta_desc = soup.select_one("meta[name='description']")
-    if meta_desc and meta_desc.get("content"):
-        teaser = clean_text(meta_desc.get("content", ""))
-        if teaser:
-            return teaser[:320]
-
-    og_desc = soup.select_one("meta[property='og:description']")
-    if og_desc and og_desc.get("content"):
-        teaser = clean_text(og_desc.get("content", ""))
-        if teaser:
-            return teaser[:320]
+    for selector in [
+        "meta[name='description']",
+        "meta[property='og:description']",
+    ]:
+        tag = soup.select_one(selector)
+        if tag and tag.get("content"):
+            teaser = clean_text(tag.get("content", ""))
+            if teaser:
+                return teaser[:320]
 
     first_p = soup.select_one("main p, article p, .content p, .main p, p")
     if first_p:
@@ -327,7 +364,8 @@ def remove_layout_noise(soup: BeautifulSoup) -> None:
     for tag in soup.select(
         ".menu, .navigation, .nav, .breadcrumb, .breadcrumbs, .footer, .header, "
         ".sidebar, .cookie, .cookies, .consent, .skiplinks, .meta-nav, .social, "
-        ".share, .sharing, .advertisement, .ad, .ads"
+        ".share, .sharing, .advertisement, .ad, .ads, .related, .recommendation, "
+        ".teaser-list, .service-links"
     ):
         tag.decompose()
 
@@ -337,13 +375,13 @@ def extract_main_text(soup: BeautifulSoup) -> str:
 
     paragraphs = [
         p.get_text(" ", strip=True)
-        for p in soup.select("main p, article p, .content p, .main p, p")
+        for p in soup.select("main p, article p, .content p, .main p, p, td")
     ]
     paragraphs = [clean_text(p) for p in paragraphs]
     paragraphs = [p for p in paragraphs if len(p) > 60]
 
     if paragraphs:
-        return " ".join(paragraphs)
+        return " ".join(paragraphs[:12])
 
     text = soup.get_text(" ", strip=True)
     return clean_text(text)
@@ -357,7 +395,7 @@ def looks_like_interesting_link(url: str, title: str, source: dict[str, Any]) ->
 
     if any(
         haystack.endswith(ext)
-        for ext in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".pdf", ".zip"]
+        for ext in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".zip"]
     ):
         return False
 
@@ -366,13 +404,21 @@ def looks_like_interesting_link(url: str, title: str, source: dict[str, Any]) ->
         return True
 
     if source["type"] == "official":
-        return "/rathaus-politik/" in haystack or "/presse" in haystack or "/artikel/" in haystack
+        return any(part in haystack for part in [
+            "/rathaus-politik/",
+            "/presse",
+            "/artikel/",
+            "/leben-in-arnsberg/",
+            "/klima-umwelt/",
+        ])
 
     if source["type"] == "media":
         return "/staedte/arnsberg/" in haystack or "arnsberg" in haystack
 
     if source["type"] == "ratsinfo":
-        return any(word in haystack for word in ["vorlage", "sitzung", "beschluss", "ausschuss", "rat"])
+        return any(word in haystack for word in [
+            "vorlage", "sitzung", "beschluss", "ausschuss", "rat", "vo020", "si010", "to010"
+        ])
 
     return False
 
@@ -397,7 +443,7 @@ def extract_links(list_html: str, list_url: str, source: dict[str, Any]) -> list
             continue
         if absolute_url in seen:
             continue
-        if len(title) < 4:
+        if len(title) < 3:
             continue
         if not looks_like_interesting_link(absolute_url, title, source):
             continue
@@ -406,6 +452,21 @@ def extract_links(list_html: str, list_url: str, source: dict[str, Any]) -> list
         links.append((title, absolute_url))
 
     return links
+
+
+def extract_published_at(soup: BeautifulSoup) -> str | None:
+    for selector, attr in [
+        ("meta[property='article:published_time']", "content"),
+        ("meta[name='date']", "content"),
+        ("time[datetime]", "datetime"),
+    ]:
+        tag = soup.select_one(selector)
+        if tag:
+            value = clean_text(tag.get(attr, ""))
+            if value:
+                return value
+
+    return None
 
 
 def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
@@ -417,6 +478,7 @@ def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
     title = extract_title(soup)
     teaser = extract_teaser(soup)
     full_text = extract_main_text(soup)
+    published_at = extract_published_at(soup)
 
     if not title and not teaser and not full_text:
         return None
@@ -451,14 +513,14 @@ def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
         "source": source["name"],
         "source_type": source["type"],
         "source_url": url,
-        "published_at": None,
+        "published_at": published_at,
         "section": infer_section(logic_text, title),
         "places": assigned_places,
         "city_wide": city_wide,
     }
 
 
-def collect_from_source(source: dict[str, Any], per_list_limit: int = 20) -> list[dict[str, Any]]:
+def collect_from_source(source: dict[str, Any], per_list_limit: int = 25) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
 
@@ -522,7 +584,7 @@ def collect() -> dict[str, Any]:
 
     for source in SOURCES:
         try:
-            items = collect_from_source(source, per_list_limit=20)
+            items = collect_from_source(source, per_list_limit=25)
             all_items.extend(items)
         except Exception:
             continue

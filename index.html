@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Arnsberg Bürger Monitor</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Bürger Monitor">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Bürgerlich verständliche und nach Orten sortierte Übersicht zu Themen aus Arnsberg.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">15 Orte – eine Stadt</p>
+        <h1>Arnsberg Bürger Monitor</h1>
+      </div>
+      <button id="refreshButton" class="ghost-button" type="button">Aktualisieren</button>
+    </header>
+
+    <section class="panel meta-panel">
+      <div>
+        <strong>Stand:</strong> <span id="generatedAt">lädt…</span>
+      </div>
+      <div>
+        <strong>Einträge:</strong> <span id="itemsTotal">–</span>
+      </div>
+      <div id="warningBox" class="warning hidden"></div>
+    </section>
+
+    <section class="panel filters">
+      <label>
+        <span>Ort</span>
+        <select id="placeSelect">
+          <option value="">Alle Orte</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Suche</span>
+        <input id="searchInput" type="search" placeholder="z. B. Schule, Verkehr, Oeventrop">
+      </label>
+
+      <label class="check-row">
+        <input id="cityWideCheckbox" type="checkbox">
+        <span>Nur stadtweite Themen</span>
+      </label>
+    </section>
+
+    <main>
+      <div id="statusLine" class="status-line">Lade Daten…</div>
+      <section id="itemsList" class="cards"></section>
+    </main>
+  </div>
+
+  <template id="itemTemplate">
+    <article class="card">
+      <div class="card-header">
+        <span class="badge section-badge"></span>
+        <span class="badge citywide-badge hidden">Stadtweit</span>
+      </div>
+      <h2 class="card-title"></h2>
+      <p class="summary"></p>
+      <dl class="meta-grid">
+        <div>
+          <dt>Ort</dt>
+          <dd class="place"></dd>
+        </div>
+        <div>
+          <dt>Quelle</dt>
+          <dd class="source"></dd>
+        </div>
+        <div>
+          <dt>Datum</dt>
+          <dd class="date"></dd>
+        </div>
+      </dl>
+      <details class="details-box">
+        <summary>Mehr anzeigen</summary>
+        <p class="teaser"></p>
+        <a class="source-link" target="_blank" rel="noopener noreferrer">Originalquelle öffnen</a>
+      </details>
+    </article>
+  </template>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

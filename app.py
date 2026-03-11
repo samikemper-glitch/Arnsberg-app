@@ -17,7 +17,7 @@ DATA_FILE = BASE_DIR / "data.json"
 
 app = FastAPI(
     title="Arnsberg Bürger Monitor",
-    version="2.3.0",
+    version="2.4.0",
 )
 
 app.add_middleware(
@@ -51,16 +51,13 @@ def load_data() -> dict[str, Any]:
         try:
             return json.loads(DATA_FILE.read_text(encoding="utf-8"))
         except Exception:
-            pass
+            return empty_data_structure(
+                warning="Vorhandene Datendatei konnte nicht gelesen werden."
+            )
 
-    try:
-        data = collect()
-        save_data(data)
-        return data
-    except Exception:
-        return empty_data_structure(
-            warning="Daten konnten aktuell nicht von den Quellen geladen werden."
-        )
+    return empty_data_structure(
+        warning="Noch keine Daten geladen. Bitte zuerst aktualisieren."
+    )
 
 
 def ensure_file(path: Path, media_type: str | None = None) -> FileResponse:
@@ -92,10 +89,10 @@ def refresh() -> dict[str, Any]:
             "items_total": data.get("items_total", 0),
             "warning": data.get("warning"),
         }
-    except Exception:
+    except Exception as exc:
         return {
             "status": "error",
-            "message": "Daten konnten nicht neu geladen werden.",
+            "message": f"Daten konnten nicht neu geladen werden: {exc}",
         }
 
 

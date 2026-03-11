@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -14,10 +15,11 @@ from arnsberg_buergermonitor import PLACES, collect
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR
 DATA_FILE = BASE_DIR / "data.json"
+STATUS_FILE = BASE_DIR / "refresh_status.json"
 
 app = FastAPI(
     title="Arnsberg Bürger Monitor",
-    version="2.4.0",
+    version="3.0.0",
 )
 
 app.add_middleware(
@@ -39,24 +41,63 @@ def empty_data_structure(warning: str | None = None) -> dict[str, Any]:
     }
 
 
-def save_data(data: dict[str, Any]) -> None:
-    DATA_FILE.write_text(
+def save_json(path: Path, data: dict[str, Any]) -> None:
+    path.write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
 
+def load_json(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def save_data(data: dict[str, Any]) -> None:
+    save_json(DATA_FILE, data)
+
+
 def load_data() -> dict[str, Any]:
-    if DATA_FILE.exists():
-        try:
-            return json.loads(DATA_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            return empty_data_structure(
-                warning="Vorhandene Datendatei konnte nicht gelesen werden."
-            )
+    data = load_json(DATA_FILE)
+    if data is not None:
+        return data
 
     return empty_data_structure(
         warning="Noch keine Daten geladen. Bitte zuerst aktualisieren."
+    )
+
+
+def load_refresh_status() -> dict[str, Any]:
+    return load_json(STATUS_FILE) or {
+        "running": False,
+        "last_started_at": None,
+        "last_finished_at": None,
+        "last_status": "idle",
+        "message": "Noch kein Aktualisierungslauf gestartet.",
+    }
+
+
+def save_refresh_status(
+    *,
+    running: bool,
+    last_started_at: str | None,
+    last_finished_at: str | None,
+    last_status: str,
+    message: str,
+) -> None:
+    save_json(
+        STATUS_FILE,
+        {
+            "running": running,
+            "last_started_at": last_started_at,
+            "last_finished_at": last_finished_at,
+            "last_status": last_status,
+            "message": message,
+        },
     )
 
 
@@ -70,6 +111,36 @@ def ensure_file(path: Path, media_type: str | None = None) -> FileResponse:
     return FileResponse(path)
 
 
+def run_refresh_in_background() -> None:
+    status = load_refresh_status()
+    save_refresh_status(
+        running=True,
+        last_started_at=status.get("last_started_at"),
+        last_finished_at=status.get("last_finished_at"),
+        last_status="running",
+        message="Aktualisierung läuft im Hintergrund.",
+    )
+
+    try:
+        data = collect()
+        save_data(data)
+        save_refresh_status(
+            running=False,
+            last_started_at=status.get("last_started_at"),
+            last_finished_at=data.get("generated_at"),
+            last_status="success",
+            message=f"Aktualisierung abgeschlossen. {data.get('items_total', 0)} Einträge geladen.",
+        )
+    except Exception as exc:
+        save_refresh_status(
+            running=False,
+            last_started_at=status.get("last_started_at"),
+            last_finished_at=None,
+            last_status="error",
+            message=f"Aktualisierung fehlgeschlagen: {exc}",
+        )
+
+
 @app.get("/api")
 def api_root() -> dict[str, str]:
     return {
@@ -80,20 +151,34 @@ def api_root() -> dict[str, str]:
 
 @app.get("/api/refresh")
 def refresh() -> dict[str, Any]:
-    try:
-        data = collect()
-        save_data(data)
+    status = load_refresh_status()
+
+    if status.get("running"):
         return {
-            "status": "ok",
-            "generated_at": data.get("generated_at"),
-            "items_total": data.get("items_total", 0),
-            "warning": data.get("warning"),
+            "status": "running",
+            "message": "Aktualisierung läuft bereits im Hintergrund.",
         }
-    except Exception as exc:
-        return {
-            "status": "error",
-            "message": f"Daten konnten nicht neu geladen werden: {exc}",
-        }
+
+    save_refresh_status(
+        running=True,
+        last_started_at="jetzt",
+        last_finished_at=status.get("last_finished_at"),
+        last_status="running",
+        message="Aktualisierung wurde gestartet.",
+    )
+
+    thread = threading.Thread(target=run_refresh_in_background, daemon=True)
+    thread.start()
+
+    return {
+        "status": "started",
+        "message": "Aktualisierung im Hintergrund gestartet.",
+    }
+
+
+@app.get("/api/refresh-status")
+def refresh_status() -> dict[str, Any]:
+    return load_refresh_status()
 
 
 @app.get("/api/meta")
@@ -164,8 +249,8 @@ def items(
             or needle in (item.get("teaser") or "").lower()
             or needle in (item.get("citizen_summary") or "").lower()
             or needle in (item.get("section") or "").lower()
-            or needle in " ".join(item.get("places", [])).lower()
             or needle in (item.get("source") or "").lower()
+            or needle in " ".join(item.get("places", [])).lower()
         ]
 
     values.sort(

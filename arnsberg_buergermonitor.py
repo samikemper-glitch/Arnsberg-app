@@ -1,19 +1,12 @@
 from __future__ import annotations
 
-import dataclasses
-import datetime as dt
-import json
-import os
 import re
-import sys
-from typing import Iterable
+from datetime import datetime
+from typing import Any
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-
-USER_AGENT = "ArnsbergBuergermonitor/0.1 (+lokales Analyse-Skript)"
-TIMEOUT = 20
 
 PLACES = [
     "Arnsberg",
@@ -32,264 +25,524 @@ PLACES = [
     "Voßwinkel",
     "Wennigloh",
 ]
-CITY_WIDE_HINTS = {
+
+USER_AGENT = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 "
+    "Mobile/15E148 Safari/604.1"
+)
+
+TIMEOUT = 20
+
+SOURCES = [
+    {
+        "name": "Arnsberg.de",
+        "type": "official",
+        "base": "https://www.arnsberg.de",
+        "urls": [
+            "https://www.arnsberg.de/",
+            "https://www.arnsberg.de/rathaus-politik/",
+            "https://www.arnsberg.de/rathaus-politik/pressestelle/presse-infos",
+            "https://www.arnsberg.de/leben-in-arnsberg/",
+            "https://www.arnsberg.de/klima-umwelt/",
+        ],
+        "allow_domains": ["arnsberg.de", "www.arnsberg.de"],
+        "include_keywords": [
+            "presse", "meldung", "artikel", "projekt", "verkehr", "bau",
+            "schule", "kita", "rat", "politik", "stadtentwicklung",
+            "umwelt", "klima", "sport", "kultur",
+        ],
+        "exclude_keywords": [
+            "impressum", "datenschutz", "barrierefreiheit", "karriere",
+            "kontakt", "suche", "login",
+        ],
+    },
+    {
+        "name": "Westfalenpost Arnsberg",
+        "type": "media",
+        "base": "https://www.wp.de",
+        "urls": [
+            "https://www.wp.de/staedte/arnsberg/",
+        ],
+        "allow_domains": ["wp.de", "www.wp.de"],
+        "include_keywords": [
+            "arnsberg", "neheim", "hüsten", "oeventrop", "bruchhausen",
+            "voßwinkel", "bachum", "herdringen", "verkehr", "bau",
+            "schule", "rat", "politik", "stadt",
+        ],
+        "exclude_keywords": [
+            "impressum", "datenschutz", "abo", "anmelden", "login",
+            "newsletter", "podcast", "video", "trauer", "shop",
+        ],
+    },
+    {
+        "name": "Ratsinfosystem Arnsberg",
+        "type": "ratsinfo",
+        "base": "https://ratsinfo.arnsberg.de",
+        "urls": [
+            "https://ratsinfo.arnsberg.de/",
+            "https://ratsinfo.arnsberg.de/bi/si010_e.asp",
+            "https://ratsinfo.arnsberg.de/bi/to010_e.asp",
+            "https://ratsinfo.arnsberg.de/bi/vo020_e.asp",
+        ],
+        "allow_domains": ["ratsinfo.arnsberg.de"],
+        "include_keywords": [
+            "vorlage", "sitzung", "beschluss", "rat", "ausschuss",
+            "bezirksausschuss", "top", "vo020", "si010", "to010",
+        ],
+        "exclude_keywords": [
+            "impressum", "datenschutz", "login", "hilfe",
+        ],
+    },
+]
+
+CITY_WIDE_KEYWORDS = [
     "stadt arnsberg",
     "gesamtstadt",
-    "stadtweit",
-    "alle ortsteile",
     "gesamtstädtisch",
-    "im gesamten stadtgebiet",
+    "stadtweit",
+    "gesamte stadt",
+    "alle ortsteile",
+    "15 orte",
+    "15 orte - eine stadt",
+    "15 orte – eine stadt",
+]
+
+NOISE_PATTERNS = [
+    r"\bzur suche springen\b",
+    r"\bzur hauptnavigation springen\b",
+    r"\bzum inhalt springen\b",
+    r"\bbarrierefreiheit\b",
+    r"\bgebärdensprache\b",
+    r"\bleichte sprache\b",
+    r"\bservice portal\b",
+    r"\bservice-portal\b",
+    r"\bkarriere\b",
+    r"\bimpressum\b",
+    r"\bdatenschutz\b",
+    r"\bcookie[s]?\b",
+    r"\bnewsletter\b",
+    r"\banmelden\b",
+    r"\blogin\b",
+    r"\bteilen\b",
+    r"\bweitere artikel\b",
+    r"\bmehr zum thema\b",
+]
+
+SECTION_KEYWORDS = {
+    "Verkehr": [
+        "verkehr", "straße", "strasse", "ampel", "kreuzung", "park",
+        "parken", "radweg", "brücke", "bruecke", "baustelle",
+        "umleitung", "fahrbahn", "verkehrsführung", "verkehrsfuehrung",
+    ],
+    "Bauen": [
+        "bauen", "bau", "sanierung", "umbau", "bebauung", "erschließung",
+        "erschliessung", "baugebiet", "wohngebiet", "wohnbebauung",
+        "gewerbegebiet", "hochbau", "tiefbau",
+    ],
+    "Schule/Kita": [
+        "schule", "kita", "kindergarten", "bildung", "schüler",
+        "schueler", "offene ganztagsschule", "ogs",
+    ],
+    "Politik": [
+        "rat", "ausschuss", "beschluss", "vorlage", "sitzung",
+        "bezirksausschuss", "stadtrat",
+    ],
+    "Sicherheit": [
+        "feuerwehr", "polizei", "ordnungsamt", "sicherheit", "schutz",
+        "rettungsdienst", "brand", "einsatz",
+    ],
+    "Umwelt": [
+        "umwelt", "klima", "energie", "baum", "natur", "nachhaltigkeit",
+        "co2", "photovoltaik", "solar", "wasser", "grün", "gruen",
+    ],
+    "Finanzen": [
+        "haushalt", "gebühr", "gebuehr", "kosten", "förderung",
+        "foerderung", "finanzen", "investition", "mittel",
+    ],
+    "Freizeit/Kultur": [
+        "kultur", "sport", "museum", "veranstaltung", "freizeit",
+        "tourismus", "festival", "konzert", "halle", "bad",
+    ],
 }
 
-OFFICIAL_SOURCES = {
-    "ratsinfo_news": "https://ratsinfo.arnsberg.de/news",
-    "ratsinfo_vorlagen": "https://ratsinfo.arnsberg.de/vorlagen",
-    "arnsberg_home": "https://www.arnsberg.de/",
-    "pressestelle": "https://www.arnsberg.de/rathaus-politik/pressestelle/presse-infos",
+SUMMARY_REPLACEMENTS = {
+    "Beschlussvorlage": "Vorlage",
+    "Sitzungsvorlage": "Vorlage",
+    "Verwaltungsvorlage": "Vorlage",
+    "Maßnahme": "Projekt",
+    "Massnahme": "Projekt",
+    "Kenntnisnahme": "Info",
+    "Beratung": "Besprechung",
+    "Umsetzung": "Durchführung",
+    "Herstellung": "Bau",
 }
 
-# Nur Quellen eintragen, die du ausdrücklich als "offizielle Medien" freigibst.
-# Beispiele: RSS-Feeds oder Übersichtsseiten lokaler, offizieller Stellen.
-OFFICIAL_MEDIA_FEEDS: list[str] = []
 
-
-@dataclasses.dataclass
-class Item:
-    title: str
-    source_name: str
-    source_url: str
-    section: str
-    teaser: str
-    places: list[str]
-    city_wide: bool
-    published_at: str | None = None
-    raw_text: str | None = None
-    citizen_summary: str | None = None
-
-
-session = requests.Session()
-session.headers.update({"User-Agent": USER_AGENT})
-
-
-def fetch_html(url: str) -> BeautifulSoup:
-    response = session.get(url, timeout=TIMEOUT)
-    response.raise_for_status()
-    return BeautifulSoup(response.text, "html.parser")
+def fetch_html(url: str) -> str | None:
+    try:
+        response = requests.get(
+            url,
+            headers={"User-Agent": USER_AGENT},
+            timeout=TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.text
+    except Exception:
+        return None
 
 
 def clean_text(text: str) -> str:
-    text = re.sub(r"\s+", " ", text or "").strip()
+    text = re.sub(r"\s+", " ", text).strip()
+
+    for pattern in NOISE_PATTERNS:
+        text = re.sub(pattern, " ", text, flags=re.IGNORECASE)
+
+    text = re.sub(r"\s+", " ", text).strip(" -–|")
     return text
 
 
-MONTHS = {
-    "januar": 1, "februar": 2, "märz": 3, "april": 4, "mai": 5, "juni": 6,
-    "juli": 7, "august": 8, "september": 9, "oktober": 10, "november": 11, "dezember": 12,
-}
+def normalize_url(url: str) -> str:
+    parsed = urlparse(url)
+    cleaned = parsed._replace(fragment="")
+    return cleaned.geturl()
 
 
-def parse_german_date(text: str) -> str | None:
+def allowed_domain(url: str, allowed_domains: list[str]) -> bool:
+    host = (urlparse(url).netloc or "").lower()
+    return any(host == domain or host.endswith("." + domain) for domain in allowed_domains)
+
+
+def guess_places(text: str, title: str = "") -> list[str]:
+    haystack = f"{title} {text}".lower()
+    found: list[str] = []
+
+    for place in PLACES:
+        if place.lower() in haystack and place not in found:
+            found.append(place)
+
+    return found
+
+
+def is_city_wide(text: str, title: str = "") -> bool:
+    haystack = f"{title} {text}".lower()
+
+    if any(keyword in haystack for keyword in CITY_WIDE_KEYWORDS):
+        return True
+
+    found = guess_places(text, title)
+    return len(found) >= 4
+
+
+def infer_section(text: str, title: str = "") -> str:
+    haystack = f"{title} {text}".lower()
+
+    for section, keywords in SECTION_KEYWORDS.items():
+        if any(keyword in haystack for keyword in keywords):
+            return section
+
+    return "Allgemein"
+
+
+def simplify_text(text: str, max_len: int = 420) -> str:
+    text = clean_text(text)
     if not text:
-        return None
-    m = re.search(r"(\d{1,2})\.(\d{1,2})\.(\d{4})", text)
-    if m:
-        day, month, year = map(int, m.groups())
-        return dt.date(year, month, day).isoformat()
-    m = re.search(r"(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\s*(\d{4})", text)
-    if m:
-        day = int(m.group(1))
-        month_name = m.group(2).lower()
-        year = int(m.group(3))
-        month = MONTHS.get(month_name)
-        if month:
-            return dt.date(year, month, day).isoformat()
+        return ""
+
+    for old, new in SUMMARY_REPLACEMENTS.items():
+        text = text.replace(old, new)
+
+    if len(text) > max_len:
+        text = text[:max_len].rsplit(" ", 1)[0].strip() + "…"
+
+    return text
+
+
+def extract_title(soup: BeautifulSoup) -> str:
+    candidates = [
+        ("meta[property='og:title']", "content"),
+        ("meta[name='twitter:title']", "content"),
+        ("h1", None),
+        ("title", None),
+    ]
+
+    for selector, attr in candidates:
+        tag = soup.select_one(selector)
+        if not tag:
+            continue
+
+        if attr:
+            value = clean_text(tag.get(attr, ""))
+        else:
+            value = clean_text(tag.get_text(" ", strip=True))
+
+        if value:
+            return value[:220]
+
+    return "Ohne Titel"
+
+
+def extract_teaser(soup: BeautifulSoup) -> str:
+    for selector in [
+        "meta[name='description']",
+        "meta[property='og:description']",
+    ]:
+        tag = soup.select_one(selector)
+        if tag and tag.get("content"):
+            teaser = clean_text(tag.get("content", ""))
+            if teaser:
+                return teaser[:320]
+
+    first_p = soup.select_one("main p, article p, .content p, .main p, p")
+    if first_p:
+        teaser = clean_text(first_p.get_text(" ", strip=True))
+        if teaser:
+            return teaser[:320]
+
+    return ""
+
+
+def remove_layout_noise(soup: BeautifulSoup) -> None:
+    for tag in soup.select(
+        "nav, header, footer, aside, script, style, noscript, form, iframe, svg"
+    ):
+        tag.decompose()
+
+    for tag in soup.select(
+        ".menu, .navigation, .nav, .breadcrumb, .breadcrumbs, .footer, .header, "
+        ".sidebar, .cookie, .cookies, .consent, .skiplinks, .meta-nav, .social, "
+        ".share, .sharing, .advertisement, .ad, .ads, .related, .recommendation, "
+        ".teaser-list, .service-links"
+    ):
+        tag.decompose()
+
+
+def extract_main_text(soup: BeautifulSoup) -> str:
+    remove_layout_noise(soup)
+
+    paragraphs = [
+        p.get_text(" ", strip=True)
+        for p in soup.select("main p, article p, .content p, .main p, p, td")
+    ]
+    paragraphs = [clean_text(p) for p in paragraphs]
+    paragraphs = [p for p in paragraphs if len(p) > 60]
+
+    if paragraphs:
+        return " ".join(paragraphs[:12])
+
+    text = soup.get_text(" ", strip=True)
+    return clean_text(text)
+
+
+def looks_like_interesting_link(url: str, title: str, source: dict[str, Any]) -> bool:
+    haystack = f"{url} {title}".lower()
+
+    if any(word in haystack for word in source.get("exclude_keywords", [])):
+        return False
+
+    if any(
+        haystack.endswith(ext)
+        for ext in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".zip"]
+    ):
+        return False
+
+    include_keywords = source.get("include_keywords", [])
+    if include_keywords and any(word in haystack for word in include_keywords):
+        return True
+
+    if source["type"] == "official":
+        return any(part in haystack for part in [
+            "/rathaus-politik/",
+            "/presse",
+            "/artikel/",
+            "/leben-in-arnsberg/",
+            "/klima-umwelt/",
+        ])
+
+    if source["type"] == "media":
+        return "/staedte/arnsberg/" in haystack or "arnsberg" in haystack
+
+    if source["type"] == "ratsinfo":
+        return any(word in haystack for word in [
+            "vorlage", "sitzung", "beschluss", "ausschuss", "rat", "vo020", "si010", "to010"
+        ])
+
+    return False
+
+
+def extract_links(list_html: str, list_url: str, source: dict[str, Any]) -> list[tuple[str, str]]:
+    soup = BeautifulSoup(list_html, "html.parser")
+    links: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    for a in soup.select("a[href]"):
+        href = (a.get("href") or "").strip()
+        title = clean_text(a.get_text(" ", strip=True))
+
+        if not href:
+            continue
+        if href.startswith("#") or href.startswith("mailto:") or href.startswith("tel:"):
+            continue
+
+        absolute_url = normalize_url(urljoin(list_url, href))
+
+        if not allowed_domain(absolute_url, source["allow_domains"]):
+            continue
+        if absolute_url in seen:
+            continue
+        if len(title) < 3:
+            continue
+        if not looks_like_interesting_link(absolute_url, title, source):
+            continue
+
+        seen.add(absolute_url)
+        links.append((title, absolute_url))
+
+    return links
+
+
+def extract_published_at(soup: BeautifulSoup) -> str | None:
+    for selector, attr in [
+        ("meta[property='article:published_time']", "content"),
+        ("meta[name='date']", "content"),
+        ("time[datetime]", "datetime"),
+    ]:
+        tag = soup.select_one(selector)
+        if tag:
+            value = clean_text(tag.get(attr, ""))
+            if value:
+                return value
+
     return None
 
 
-def detect_places(text: str) -> tuple[list[str], bool]:
-    haystack = f" {text.lower()} "
-    found = [place for place in PLACES if place.lower() in haystack]
-    city_wide = any(hint in haystack for hint in CITY_WIDE_HINTS)
-    if "arnsberg" in haystack and not found:
-        found.append("Arnsberg")
-    if city_wide and "Arnsberg" not in found:
-        found.insert(0, "Arnsberg")
-    return sorted(set(found)), city_wide
+def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
+    html = fetch_html(url)
+    if not html:
+        return None
 
+    soup = BeautifulSoup(html, "html.parser")
+    title = extract_title(soup)
+    teaser = extract_teaser(soup)
+    full_text = extract_main_text(soup)
+    published_at = extract_published_at(soup)
 
-def simplify_text(title: str, teaser: str, places: list[str], city_wide: bool) -> str:
-    # Regelbasierte Kurzfassung ohne KI. Für bessere Ergebnisse kann später ein LLM ergänzt werden.
-    parts: list[str] = []
-    if places:
-        if city_wide:
-            parts.append("Das betrifft die ganze Stadt und damit alle Ortsteile.")
-        else:
-            parts.append(f"Das betrifft vor allem: {', '.join(places)}.")
-    core = teaser or title
-    core = re.sub(r"\([^)]*\)", "", core)
-    core = re.sub(r"\b(Beschlussvorlage|Berichtsvorlage|Mitteilungsvorlage)\b", "Vorlage", core, flags=re.I)
-    core = clean_text(core)
-    if core:
-        parts.append(f"Kurz erklärt: {core}")
-    if not parts:
-        parts.append(f"Thema: {title}")
-    return " ".join(parts)
+    if not title and not teaser and not full_text:
+        return None
 
+    logic_text = f"{title} {teaser} {full_text}"
+    places_found = guess_places(logic_text, title)
+    city_wide = is_city_wide(logic_text, title)
 
-def parse_ratsinfo_vorlagen(max_items: int = 25) -> list[Item]:
-    soup = fetch_html(OFFICIAL_SOURCES["ratsinfo_vorlagen"])
-    items: list[Item] = []
-    # Sternberg RIS list: titles typically appear as links followed by number and teaser paragraphs.
-    for link in soup.select("a[href]"):
-        title = clean_text(link.get_text(" ", strip=True))
-        href = urljoin(OFFICIAL_SOURCES["ratsinfo_vorlagen"], link.get("href", ""))
-        if not title or "Vorgang" in title or not re.search(r"\b\d{1,3}/\d{4}\b", title):
-            continue
-        parent_text = clean_text(link.parent.get_text(" ", strip=True))
-        teaser = parent_text.replace(title, "", 1).strip(" -")
-        places, city_wide = detect_places(f"{title} {teaser}")
-        exported_date = parse_german_date(title)
-        item = Item(
-            title=title,
-            source_name="Ratsinfo",
-            source_url=href,
-            section="Vorlagen",
-            teaser=teaser,
-            places=places,
-            city_wide=city_wide,
-            published_at=exported_date,
+    if city_wide:
+        assigned_places = PLACES[:]
+    elif places_found:
+        assigned_places = places_found
+    else:
+        assigned_places = ["Unklar"]
+
+    citizen_summary_source = teaser or full_text or title
+    citizen_summary = simplify_text(citizen_summary_source, max_len=420)
+
+    if city_wide and citizen_summary:
+        citizen_summary = (
+            "Das betrifft die ganze Stadt und damit alle Ortsteile. Kurz erklärt: "
+            + citizen_summary
         )
-        item.citizen_summary = simplify_text(item.title, item.teaser, item.places, item.city_wide)
-        items.append(item)
-        if len(items) >= max_items:
-            break
-    return dedupe_items(items)
 
+    if len(citizen_summary.strip()) < 20 and len(teaser.strip()) < 20:
+        return None
 
-def parse_ratsinfo_news(max_items: int = 20) -> list[Item]:
-    soup = fetch_html(OFFICIAL_SOURCES["ratsinfo_news"])
-    items: list[Item] = []
-    for link in soup.select("a[href]"):
-        title = clean_text(link.get_text(" ", strip=True))
-        href = urljoin(OFFICIAL_SOURCES["ratsinfo_news"], link.get("href", ""))
-        if not title or title in {"News", "Startseite", "Ratsinfosystem"}:
-            continue
-        if href.rstrip("/") == OFFICIAL_SOURCES["ratsinfo_news"].rstrip("/"):
-            continue
-        ctx = clean_text(link.parent.get_text(" ", strip=True))
-        if len(title) < 8:
-            continue
-        places, city_wide = detect_places(f"{title} {ctx}")
-        item = Item(
-            title=title,
-            source_name="Ratsinfo",
-            source_url=href,
-            section="News",
-            teaser=ctx.replace(title, "", 1).strip(" -"),
-            places=places,
-            city_wide=city_wide,
-        )
-        item.citizen_summary = simplify_text(item.title, item.teaser, item.places, item.city_wide)
-        items.append(item)
-        if len(items) >= max_items:
-            break
-    return dedupe_items(items)
-
-
-def parse_arnsberg_home(max_items: int = 40) -> list[Item]:
-    soup = fetch_html(OFFICIAL_SOURCES["arnsberg_home"])
-    items: list[Item] = []
-    for link in soup.select("a[href]"):
-        title = clean_text(link.get_text(" ", strip=True))
-        href = urljoin(OFFICIAL_SOURCES["arnsberg_home"], link.get("href", ""))
-        if not title or len(title) < 6:
-            continue
-        # nur interne Links berücksichtigen
-        if not href.startswith("https://www.arnsberg.de"):
-            continue
-        # Navigationsmüll reduzieren
-        bad = {"Zurück", "Nach oben springen", "Zum Inhalt springen", "Service & Kontakt", "Startseite"}
-        if title in bad:
-            continue
-        ctx = clean_text(link.parent.get_text(" ", strip=True))
-        places, city_wide = detect_places(f"{title} {ctx}")
-        item = Item(
-            title=title,
-            source_name="Arnsberg.de",
-            source_url=href,
-            section="Website",
-            teaser=ctx.replace(title, "", 1).strip(" -"),
-            places=places,
-            city_wide=city_wide,
-        )
-        item.citizen_summary = simplify_text(item.title, item.teaser, item.places, item.city_wide)
-        items.append(item)
-        if len(items) >= max_items:
-            break
-    return dedupe_items(items)
-
-
-def dedupe_items(items: Iterable[Item]) -> list[Item]:
-    seen: set[tuple[str, str]] = set()
-    out: list[Item] = []
-    for item in items:
-        key = (item.title.lower(), item.source_url)
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(item)
-    return out
-
-
-def expand_city_wide_items(items: list[Item]) -> list[Item]:
-    expanded: list[Item] = []
-    for item in items:
-        if item.city_wide:
-            for place in PLACES:
-                clone = dataclasses.replace(item, places=[place])
-                expanded.append(clone)
-        elif item.places:
-            expanded.append(item)
-        else:
-            clone = dataclasses.replace(item, places=["Unklar"])
-            expanded.append(clone)
-    return expanded
-
-
-def group_by_place(items: list[Item]) -> dict[str, list[dict]]:
-    result: dict[str, list[dict]] = {place: [] for place in PLACES}
-    result["Unklar"] = []
-    for item in expand_city_wide_items(items):
-        place = item.places[0] if item.places else "Unklar"
-        result.setdefault(place, []).append(dataclasses.asdict(item))
-    for place, bucket in result.items():
-        bucket.sort(key=lambda x: (x.get("published_at") or "9999-12-31", x["title"]))
-    return result
-
-
-def collect() -> dict:
-    all_items = []
-    all_items.extend(parse_ratsinfo_vorlagen())
-    all_items.extend(parse_ratsinfo_news())
-    all_items.extend(parse_arnsberg_home())
-    all_items = dedupe_items(all_items)
     return {
-        "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
-        "sources": OFFICIAL_SOURCES,
-        "places": PLACES,
-        "items_total": len(all_items),
-        "by_place": group_by_place(all_items),
+        "title": title[:220],
+        "teaser": teaser[:320],
+        "citizen_summary": citizen_summary,
+        "source": source["name"],
+        "source_type": source["type"],
+        "source_url": url,
+        "published_at": published_at,
+        "section": infer_section(logic_text, title),
+        "places": assigned_places,
+        "city_wide": city_wide,
     }
 
 
-def main() -> int:
-    output_path = sys.argv[1] if len(sys.argv) > 1 else "arnsberg_buergermonitor.json"
-    data = collect()
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"Datei geschrieben: {output_path} | Einträge: {data['items_total']}")
-    return 0
+def collect_from_source(source: dict[str, Any], per_list_limit: int = 25) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+
+    for list_url in source["urls"]:
+        html = fetch_html(list_url)
+        if not html:
+            continue
+
+        links = extract_links(html, list_url, source)
+
+        for _, url in links[:per_list_limit]:
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+
+            try:
+                item = parse_article(url, source)
+                if item:
+                    results.append(item)
+            except Exception:
+                continue
+
+    return results
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def deduplicate_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for item in items:
+        key = (
+            item.get("source_url")
+            or f"{item.get('source')}|{item.get('title')}|{item.get('teaser')}"
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+
+    return unique
+
+
+def build_by_place(items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    by_place: dict[str, list[dict[str, Any]]] = {place: [] for place in PLACES}
+    by_place["Unklar"] = []
+
+    for item in items:
+        places = item.get("places") or ["Unklar"]
+
+        for place in places:
+            if place not in by_place:
+                by_place["Unklar"].append(item)
+            else:
+                by_place[place].append(item)
+
+    return by_place
+
+
+def collect() -> dict[str, Any]:
+    all_items: list[dict[str, Any]] = []
+
+    for source in SOURCES:
+        try:
+            items = collect_from_source(source, per_list_limit=25)
+            all_items.extend(items)
+        except Exception:
+            continue
+
+    all_items = deduplicate_items(all_items)
+    by_place = build_by_place(all_items)
+
+    return {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "places": PLACES,
+        "items_total": len(all_items),
+        "by_place": by_place,
+        "warning": None if all_items else "Es konnten aktuell keine oder nur sehr wenige Inhalte geladen werden.",
+    }

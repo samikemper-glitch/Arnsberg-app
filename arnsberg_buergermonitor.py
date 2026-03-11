@@ -32,53 +32,49 @@ USER_AGENT = (
     "Mobile/15E148 Safari/604.1"
 )
 
-TIMEOUT = 20
+TIMEOUT = 5
 
 SOURCES = [
     {
         "name": "Arnsberg.de",
         "type": "official",
-        "base": "https://www.arnsberg.de",
         "urls": [
             "https://www.arnsberg.de/",
             "https://www.arnsberg.de/rathaus-politik/",
             "https://www.arnsberg.de/rathaus-politik/pressestelle/presse-infos",
             "https://www.arnsberg.de/leben-in-arnsberg/",
-            "https://www.arnsberg.de/klima-umwelt/",
         ],
         "allow_domains": ["arnsberg.de", "www.arnsberg.de"],
         "include_keywords": [
-            "presse", "meldung", "artikel", "projekt", "verkehr", "bau",
-            "schule", "kita", "rat", "politik", "stadtentwicklung",
-            "umwelt", "klima", "sport", "kultur",
+            "presse",
+            "meldung",
+            "artikel",
+            "projekt",
+            "verkehr",
+            "bau",
+            "schule",
+            "kita",
+            "rat",
+            "politik",
+            "stadtentwicklung",
+            "umwelt",
+            "klima",
+            "sport",
+            "kultur",
         ],
         "exclude_keywords": [
-            "impressum", "datenschutz", "barrierefreiheit", "karriere",
-            "kontakt", "suche", "login",
-        ],
-    },
-    {
-        "name": "Westfalenpost Arnsberg",
-        "type": "media",
-        "base": "https://www.wp.de",
-        "urls": [
-            "https://www.wp.de/staedte/arnsberg/",
-        ],
-        "allow_domains": ["wp.de", "www.wp.de"],
-        "include_keywords": [
-            "arnsberg", "neheim", "hüsten", "oeventrop", "bruchhausen",
-            "voßwinkel", "bachum", "herdringen", "verkehr", "bau",
-            "schule", "rat", "politik", "stadt",
-        ],
-        "exclude_keywords": [
-            "impressum", "datenschutz", "abo", "anmelden", "login",
-            "newsletter", "podcast", "video", "trauer", "shop",
+            "impressum",
+            "datenschutz",
+            "barrierefreiheit",
+            "karriere",
+            "kontakt",
+            "suche",
+            "login",
         ],
     },
     {
         "name": "Ratsinfosystem Arnsberg",
         "type": "ratsinfo",
-        "base": "https://ratsinfo.arnsberg.de",
         "urls": [
             "https://ratsinfo.arnsberg.de/",
             "https://ratsinfo.arnsberg.de/bi/si010_e.asp",
@@ -87,11 +83,22 @@ SOURCES = [
         ],
         "allow_domains": ["ratsinfo.arnsberg.de"],
         "include_keywords": [
-            "vorlage", "sitzung", "beschluss", "rat", "ausschuss",
-            "bezirksausschuss", "top", "vo020", "si010", "to010",
+            "vorlage",
+            "sitzung",
+            "beschluss",
+            "rat",
+            "ausschuss",
+            "bezirksausschuss",
+            "top",
+            "vo020",
+            "si010",
+            "to010",
         ],
         "exclude_keywords": [
-            "impressum", "datenschutz", "login", "hilfe",
+            "impressum",
+            "datenschutz",
+            "login",
+            "hilfe",
         ],
     },
 ]
@@ -130,39 +137,96 @@ NOISE_PATTERNS = [
 ]
 
 SECTION_KEYWORDS = {
+    "Ratsbeschluss": [
+        "beschluss",
+        "beschlossen",
+        "rat beschließt",
+        "rat beschliesst",
+        "ausschuss beschließt",
+        "ausschuss beschliesst",
+        "einstimmig beschlossen",
+        "mehrheitlich beschlossen",
+        "zustimmung",
+        "abstimmung",
+    ],
     "Verkehr": [
-        "verkehr", "straße", "strasse", "ampel", "kreuzung", "park",
-        "parken", "radweg", "brücke", "bruecke", "baustelle",
-        "umleitung", "fahrbahn", "verkehrsführung", "verkehrsfuehrung",
+        "verkehr",
+        "straße",
+        "strasse",
+        "ampel",
+        "kreuzung",
+        "park",
+        "parken",
+        "radweg",
+        "brücke",
+        "bruecke",
+        "baustelle",
+        "umleitung",
     ],
     "Bauen": [
-        "bauen", "bau", "sanierung", "umbau", "bebauung", "erschließung",
-        "erschliessung", "baugebiet", "wohngebiet", "wohnbebauung",
-        "gewerbegebiet", "hochbau", "tiefbau",
+        "bauen",
+        "bau",
+        "sanierung",
+        "umbau",
+        "bebauung",
+        "erschließung",
+        "erschliessung",
+        "baugebiet",
+        "wohngebiet",
+        "gewerbegebiet",
     ],
     "Schule/Kita": [
-        "schule", "kita", "kindergarten", "bildung", "schüler",
-        "schueler", "offene ganztagsschule", "ogs",
+        "schule",
+        "kita",
+        "kindergarten",
+        "bildung",
+        "schüler",
+        "schueler",
+        "ogs",
     ],
     "Politik": [
-        "rat", "ausschuss", "beschluss", "vorlage", "sitzung",
-        "bezirksausschuss", "stadtrat",
+        "rat",
+        "ausschuss",
+        "vorlage",
+        "sitzung",
+        "bezirksausschuss",
+        "stadtrat",
     ],
     "Sicherheit": [
-        "feuerwehr", "polizei", "ordnungsamt", "sicherheit", "schutz",
-        "rettungsdienst", "brand", "einsatz",
+        "feuerwehr",
+        "polizei",
+        "ordnungsamt",
+        "sicherheit",
+        "schutz",
     ],
     "Umwelt": [
-        "umwelt", "klima", "energie", "baum", "natur", "nachhaltigkeit",
-        "co2", "photovoltaik", "solar", "wasser", "grün", "gruen",
+        "umwelt",
+        "klima",
+        "energie",
+        "baum",
+        "natur",
+        "nachhaltigkeit",
+        "solar",
+        "wasser",
     ],
     "Finanzen": [
-        "haushalt", "gebühr", "gebuehr", "kosten", "förderung",
-        "foerderung", "finanzen", "investition", "mittel",
+        "haushalt",
+        "gebühr",
+        "gebuehr",
+        "kosten",
+        "förderung",
+        "foerderung",
+        "finanzen",
+        "investition",
     ],
     "Freizeit/Kultur": [
-        "kultur", "sport", "museum", "veranstaltung", "freizeit",
-        "tourismus", "festival", "konzert", "halle", "bad",
+        "kultur",
+        "sport",
+        "museum",
+        "veranstaltung",
+        "freizeit",
+        "tourismus",
+        "konzert",
     ],
 }
 
@@ -175,7 +239,6 @@ SUMMARY_REPLACEMENTS = {
     "Kenntnisnahme": "Info",
     "Beratung": "Besprechung",
     "Umsetzung": "Durchführung",
-    "Herstellung": "Bau",
 }
 
 
@@ -224,6 +287,19 @@ def guess_places(text: str, title: str = "") -> list[str]:
     return found
 
 
+def is_relevant_for_arnsberg(text: str, title: str = "") -> bool:
+    haystack = f"{title} {text}".lower()
+
+    if "arnsberg" in haystack:
+        return True
+
+    for place in PLACES:
+        if place.lower() in haystack:
+            return True
+
+    return False
+
+
 def is_city_wide(text: str, title: str = "") -> bool:
     haystack = f"{title} {text}".lower()
 
@@ -242,6 +318,36 @@ def infer_section(text: str, title: str = "") -> str:
             return section
 
     return "Allgemein"
+
+
+def detect_resolution_status(text: str, title: str = "") -> str | None:
+    haystack = f"{title} {text}".lower()
+
+    patterns = {
+        "beschlossen": [
+            "beschlossen",
+            "einstimmig beschlossen",
+            "mehrheitlich beschlossen",
+            "zugestimmt",
+            "angenommen",
+        ],
+        "beratung": [
+            "beratung",
+            "beraten",
+            "vorberatung",
+        ],
+        "abgelehnt": [
+            "abgelehnt",
+            "nicht beschlossen",
+            "verworfen",
+        ],
+    }
+
+    for status, words in patterns.items():
+        if any(word in haystack for word in words):
+            return status
+
+    return None
 
 
 def simplify_text(text: str, max_len: int = 420) -> str:
@@ -311,8 +417,7 @@ def remove_layout_noise(soup: BeautifulSoup) -> None:
     for tag in soup.select(
         ".menu, .navigation, .nav, .breadcrumb, .breadcrumbs, .footer, .header, "
         ".sidebar, .cookie, .cookies, .consent, .skiplinks, .meta-nav, .social, "
-        ".share, .sharing, .advertisement, .ad, .ads, .related, .recommendation, "
-        ".teaser-list, .service-links"
+        ".share, .sharing, .advertisement, .ad, .ads, .related, .recommendation"
     ):
         tag.decompose()
 
@@ -328,7 +433,7 @@ def extract_main_text(soup: BeautifulSoup) -> str:
     paragraphs = [p for p in paragraphs if len(p) > 60]
 
     if paragraphs:
-        return " ".join(paragraphs[:12])
+        return " ".join(paragraphs[:8])
 
     text = soup.get_text(" ", strip=True)
     return clean_text(text)
@@ -347,27 +452,7 @@ def looks_like_interesting_link(url: str, title: str, source: dict[str, Any]) ->
         return False
 
     include_keywords = source.get("include_keywords", [])
-    if include_keywords and any(word in haystack for word in include_keywords):
-        return True
-
-    if source["type"] == "official":
-        return any(part in haystack for part in [
-            "/rathaus-politik/",
-            "/presse",
-            "/artikel/",
-            "/leben-in-arnsberg/",
-            "/klima-umwelt/",
-        ])
-
-    if source["type"] == "media":
-        return "/staedte/arnsberg/" in haystack or "arnsberg" in haystack
-
-    if source["type"] == "ratsinfo":
-        return any(word in haystack for word in [
-            "vorlage", "sitzung", "beschluss", "ausschuss", "rat", "vo020", "si010", "to010"
-        ])
-
-    return False
+    return any(word in haystack for word in include_keywords)
 
 
 def extract_links(list_html: str, list_url: str, source: dict[str, Any]) -> list[tuple[str, str]]:
@@ -416,6 +501,37 @@ def extract_published_at(soup: BeautifulSoup) -> str | None:
     return None
 
 
+def build_citizen_summary(
+    source_type: str,
+    title: str,
+    teaser: str,
+    full_text: str,
+    section: str,
+    resolution_status: str | None,
+    city_wide: bool,
+) -> str:
+    base = teaser or full_text or title
+    summary = simplify_text(base, max_len=420)
+
+    if source_type == "ratsinfo":
+        prefix = "Thema aus dem Ratsinfosystem. "
+        if resolution_status == "beschlossen":
+            prefix = "Im Rat oder Ausschuss wurde etwas beschlossen. "
+        elif resolution_status == "beratung":
+            prefix = "Das Thema wird politisch beraten. "
+        elif resolution_status == "abgelehnt":
+            prefix = "Das Thema wurde politisch abgelehnt. "
+        summary = prefix + summary
+
+    if section == "Ratsbeschluss" and not summary.lower().startswith("im rat"):
+        summary = "Im Rat oder Ausschuss geht es um einen Beschluss. " + summary
+
+    if city_wide:
+        summary = "Das betrifft die ganze Stadt und damit alle Ortsteile. Kurz erklärt: " + summary
+
+    return summary[:500]
+
+
 def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
     html = fetch_html(url)
     if not html:
@@ -431,8 +547,14 @@ def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
     logic_text = f"{title} {teaser} {full_text}"
+
+    if not is_relevant_for_arnsberg(logic_text, title):
+        return None
+
     places_found = guess_places(logic_text, title)
     city_wide = is_city_wide(logic_text, title)
+    section = infer_section(logic_text, title)
+    resolution_status = detect_resolution_status(logic_text, title)
 
     if city_wide:
         assigned_places = PLACES[:]
@@ -441,14 +563,15 @@ def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
     else:
         assigned_places = ["Unklar"]
 
-    citizen_summary_source = teaser or full_text or title
-    citizen_summary = simplify_text(citizen_summary_source, max_len=420)
-
-    if city_wide and citizen_summary:
-        citizen_summary = (
-            "Das betrifft die ganze Stadt und damit alle Ortsteile. Kurz erklärt: "
-            + citizen_summary
-        )
+    citizen_summary = build_citizen_summary(
+        source_type=source["type"],
+        title=title,
+        teaser=teaser,
+        full_text=full_text,
+        section=section,
+        resolution_status=resolution_status,
+        city_wide=city_wide,
+    )
 
     if len(citizen_summary.strip()) < 20 and len(teaser.strip()) < 20:
         return None
@@ -461,13 +584,14 @@ def parse_article(url: str, source: dict[str, Any]) -> dict[str, Any] | None:
         "source_type": source["type"],
         "source_url": url,
         "published_at": published_at,
-        "section": infer_section(logic_text, title),
+        "section": section,
         "places": assigned_places,
         "city_wide": city_wide,
+        "resolution_status": resolution_status,
     }
 
 
-def collect_from_source(source: dict[str, Any], per_list_limit: int = 25) -> list[dict[str, Any]]:
+def collect_from_source(source: dict[str, Any], per_list_limit: int = 5) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
 
@@ -531,7 +655,7 @@ def collect() -> dict[str, Any]:
 
     for source in SOURCES:
         try:
-            items = collect_from_source(source, per_list_limit=25)
+            items = collect_from_source(source, per_list_limit=5)
             all_items.extend(items)
         except Exception:
             continue
@@ -544,5 +668,5 @@ def collect() -> dict[str, Any]:
         "places": PLACES,
         "items_total": len(all_items),
         "by_place": by_place,
-        "warning": None if all_items else "Es konnten aktuell keine oder nur sehr wenige Inhalte geladen werden.",
+        "warning": None if all_items else "Es konnten aktuell keine passenden offiziellen Arnsberg-Inhalte geladen werden.",
     }
